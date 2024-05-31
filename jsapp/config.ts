@@ -5,15 +5,12 @@ type ClassKeys = keyof Config;
 class Config {
   public readonly KEY_SECRET: string;
   public readonly SHARED_SECRET: string;
-  public readonly SHOP_ID: string;
   public readonly port = process.env.NODE_ENV === "production" ? 80 : 3003;
   constructor() {
     this.KEY_SECRET = process.env.KEY_SECRET || "";
     this.SHARED_SECRET = process.env.SHARED_SECRET || "";
-    this.SHOP_ID = process.env.SHOP_ID || "";
     this.validateKey("KEY_SECRET");
     this.validateKey("SHARED_SECRET");
-    this.validateKey("SHOP_ID");
   }
 
   private validateKey(key: ClassKeys) {

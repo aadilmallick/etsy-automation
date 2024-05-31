@@ -14,30 +14,19 @@ RUN apk add --no-cache --force-overwrite glibc-2.28-r0.apk
 
 RUN npm install -g bun
 
-# ENV BUN_INSTALL=/root/.bun
-# RUN echo 'export BUN_INSTALL=/root/.bun' >> /etc/profile.d/bun.sh && \
-#     echo 'export PATH=$BUN_INSTALL/bin:$PATH' >> /etc/profile.d/bun.sh
+WORKDIR /usr/src/app
 
-# # Source the profile in every shell session
-# SHELL ["/bin/bash", "-l", "-c"]
-# RUN curl -o https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-# RUN source ~/.nvm/nvm.sh
-# RUN nvm install 20
-# RUN nvm alias default 20
-# RUN nvm use 20
+COPY package*.json ./
+COPY bun.lockb ./
+
+RUN bun install
+
+COPY . .
+RUN npm install --prefix frontend
 
 
-# WORKDIR /usr/src/app
 
-# COPY package*.json ./
-# COPY bun.lockb ./
-# COPY . .
-
-# RUN bun install
-# RUN npm install --prefix frontend
-
-# # run the app
-# USER bun
-# EXPOSE 80
-# CMD [ "bun", "start" ]
-CMD ["sh"]
+# run the app
+EXPOSE 80
+CMD [ "bun", "start" ]
+# CMD ["sh"]
