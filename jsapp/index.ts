@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { application, Request, Response } from "express";
 import axios, { AxiosError } from "axios";
 import config, { getOAuthURL } from "./config";
 import cors from "cors";
@@ -13,8 +13,7 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-const port = 3003;
-
+const port = config.port;
 app.get("/", (req: Request, res: Response) => {
   res.sendFile(__dirname + "dist/index.html");
 });
@@ -67,7 +66,7 @@ app.get("/api/oauth/redirect", async (req: Request, res: Response) => {
     body: JSON.stringify({
       grant_type: "authorization_code",
       client_id: config.KEY_SECRET,
-      redirect_uri: "http://localhost:3003/oauth/redirect",
+      redirect_uri: `http://localhost:${port}/oauth/redirect`,
       code: authCode,
       code_verifier: app.locals.clientVerifier,
     }),
@@ -119,5 +118,6 @@ app.get("/welcome", async (req: Request, res: Response) => {
 });
 
 app.listen(port, () => {
+  console.log("Current environment: ", process.env.NODE_ENV);
   console.log(`Server is running on http://localhost:${port}`);
 });

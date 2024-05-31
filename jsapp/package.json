@@ -16,7 +16,9 @@
     "express": "^4.19.2"
   },
   "scripts": {
-    "start": "bun run build --prefix frontend && bun --watch run index.ts",
-    "build": "npm run build --prefix frontend"
+    "dev": "bun run builddev && bun --watch run index.ts",
+    "start": "bun run build && NODE_ENV=production bun run index.ts",
+    "build": "npm run build --prefix frontend",
+    "builddev": "npm run builddev --prefix frontend"
   }
 }

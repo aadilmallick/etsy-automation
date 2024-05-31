@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build --emptyOutDir",
-    "preview": "vite preview"
+    "builddev": "tsc && vite build --emptyOutDir --mode development",
+    "preview": "vite preview",
+    "serve": "vite serve"
   },
   "devDependencies": {
     "typescript": "^5.2.2",

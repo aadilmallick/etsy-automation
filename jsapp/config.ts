@@ -6,6 +6,7 @@ class Config {
   public readonly KEY_SECRET: string;
   public readonly SHARED_SECRET: string;
   public readonly SHOP_ID: string;
+  public readonly port = process.env.NODE_ENV === "production" ? 80 : 3003;
   constructor() {
     this.KEY_SECRET = process.env.KEY_SECRET || "";
     this.SHARED_SECRET = process.env.SHARED_SECRET || "";
@@ -46,7 +47,7 @@ export function getOAuthURL() {
   const state = Math.random().toString(36).substring(7);
   const scopes = "listings_w%20shops_w%20shops_r%20listings_r";
   return {
-    url: `https://www.etsy.com/oauth/connect?response_type=code&redirect_uri=http://localhost:3003/oauth/redirect&scope=listings_w%20shops_w&client_id=${config.KEY_SECRET}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`,
+    url: `https://www.etsy.com/oauth/connect?response_type=code&redirect_uri=http://localhost:${config.port}/oauth/redirect&scope=listings_w%20shops_w&client_id=${config.KEY_SECRET}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`,
     clientVerifier: codeVerifier,
     codeChallenge,
     state,
