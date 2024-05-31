@@ -1,0 +1,11 @@
+selenium
+flask
+requests
+pandas
+pillow
+pdf2image
+python-dotenv
+PyPDF2
+google-generativeai
+ipykernel
+PyMuPDF
