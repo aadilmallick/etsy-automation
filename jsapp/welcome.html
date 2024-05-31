@@ -6,7 +6,8 @@
     <title>Document</title>
   </head>
   <body>
-    <button>print access token</button>
+    <button id="access-token">print access token</button>
+    <button id="refresh-token">refresh token</button>
   </body>
   <script>
     class SearchParams {
@@ -24,7 +25,7 @@
         this.paramsDict = params;
       }
     }
-    document.querySelector("button").addEventListener("click", () => {
+    document.querySelector("#access-token").addEventListener("click", () => {
       const params = new SearchParams(window.location.href);
       const accessToken = params.paramsDict.access_token;
       if (accessToken) {
@@ -35,5 +36,24 @@
         alert("no access token");
       }
     });
+
+    document
+      .querySelector("#refresh-token")
+      .addEventListener("click", async () => {
+        const response = await fetch("/api/refreshtoken");
+        if (!response.ok) {
+          alert("error");
+          console.log(response);
+          return;
+        }
+        const data = await response.json();
+        const access_token = data.access_token;
+        console.log(access_token);
+        if (access_token) {
+          alert("access token is " + access_token);
+        } else {
+          alert("no access token");
+        }
+      });
   </script>
 </html>

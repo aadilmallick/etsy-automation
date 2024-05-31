@@ -6,11 +6,14 @@ class Config {
   public readonly KEY_SECRET: string;
   public readonly SHARED_SECRET: string;
   public readonly port = process.env.NODE_ENV === "production" ? 80 : 3003;
+  public readonly VITE_API_URL_PRODUCTION: string;
   constructor() {
     this.KEY_SECRET = process.env.KEY_SECRET || "";
     this.SHARED_SECRET = process.env.SHARED_SECRET || "";
+    this.VITE_API_URL_PRODUCTION = process.env.VITE_API_URL_PRODUCTION || "";
     this.validateKey("KEY_SECRET");
     this.validateKey("SHARED_SECRET");
+    this.validateKey("VITE_API_URL_PRODUCTION");
   }
 
   private validateKey(key: ClassKeys) {
@@ -43,8 +46,12 @@ export function getOAuthURL() {
   const codeChallenge = base64URLEncode(sha256(codeVerifier));
   const state = Math.random().toString(36).substring(7);
   const scopes = "listings_w%20shops_w%20shops_r%20listings_r";
+  const redirect_uri =
+    process.env.NODE_ENV === "production"
+      ? `${config.VITE_API_URL_PRODUCTION}/api/oauth/redirect`
+      : `http://localhost:${config.port}/api/oauth/redirect`;
   return {
-    url: `https://www.etsy.com/oauth/connect?response_type=code&redirect_uri=http://localhost:${config.port}/oauth/redirect&scope=listings_w%20shops_w&client_id=${config.KEY_SECRET}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`,
+    url: `https://www.etsy.com/oauth/connect?response_type=code&redirect_uri=${redirect_uri}&scope=${scopes}&client_id=${config.KEY_SECRET}&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`,
     clientVerifier: codeVerifier,
     codeChallenge,
     state,

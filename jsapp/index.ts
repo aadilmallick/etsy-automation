@@ -61,12 +61,16 @@ app.get("/api/oauth/redirect", async (req: Request, res: Response) => {
     res.status(400).send("No client verifier found");
   }
   const tokenUrl = "https://api.etsy.com/v3/public/oauth/token";
+  const redirect_uri =
+    process.env.NODE_ENV === "production"
+      ? `${config.VITE_API_URL_PRODUCTION}/api/oauth/redirect`
+      : `http://localhost:${port}/api/oauth/redirect`;
   const requestOptions = {
     method: "POST",
     body: JSON.stringify({
       grant_type: "authorization_code",
       client_id: config.KEY_SECRET,
-      redirect_uri: `http://localhost:${port}/oauth/redirect`,
+      redirect_uri: redirect_uri,
       code: authCode,
       code_verifier: app.locals.clientVerifier,
     }),
@@ -82,8 +86,9 @@ app.get("/api/oauth/redirect", async (req: Request, res: Response) => {
     const tokenData = (await response.json()) as { access_token: string };
     console.log("Token data");
     console.log(tokenData);
-    // res.redirect(`/welcome?access_token=${tokenData.access_token}`);
-    res.json(tokenData);
+    app.locals.tokenData = tokenData;
+    res.redirect(`/welcome?access_token=${tokenData.access_token}`);
+    // res.json(tokenData);
   } else {
     res.send("oops");
   }
@@ -91,8 +96,35 @@ app.get("/api/oauth/redirect", async (req: Request, res: Response) => {
 
 app.get("/api/accesstoken", async (req: Request, res: Response) => {
   return res.json({
-    access_token: app.locals.access_token,
+    access_token: app.locals.access_token || null,
+    token_data: app.locals.tokenData || null,
   });
+});
+
+// gets new access token
+app.get("/api/refreshtoken", async (req: Request, res: Response) => {
+  if (!app.locals.tokenData) {
+    return res.status(400).json({ error: "No token data found" });
+  }
+  const url = `https://api.etsy.com/v3/public/oauth/token?grant_type=refresh_token&client_id=${config.KEY_SECRET}&refresh_token=${app.locals.tokenData.refresh_token}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  });
+  if (response.ok) {
+    const tokenData = (await response.json()) as {
+      access_token: string;
+      refresh_token: string;
+    };
+    app.locals.tokenData = tokenData;
+    return res.json(tokenData);
+  } else {
+    return res.status(500).json({
+      error: "Failed to refresh token",
+    });
+  }
 });
 
 app.get("/welcome", async (req: Request, res: Response) => {

@@ -75,8 +75,8 @@ def create_listing(shop_id: int, filename: str):
         "title": sheet_music_title,
         "description": sheet_music_description,
         "should_auto_renew": "true",
-        "tags": ["sheet music", "piano", "piano tutorial", "piano sheet music",
-                 "sheet music pdf", "piano pdf", "piano sheet music pdf", sheet_music_title],
+        "tags": ",".join(["sheet music", "piano", "piano tutorial", "piano sheet music",
+                 "sheet music pdf", "piano pdf", "piano sheet music pdf", sheet_music_title]),
         "shop_section_id": shop_section_id,
         "type": "download"
     }
