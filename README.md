@@ -1,17 +1,10 @@
 # Info
 
-To make a request to any Open API v3 endpoint, use URLs with a https://api.etsy.com/v3/application/ prefix. Every request to a v3 endpoint must include an x-api-key header, with your Etsy App API Key keystring (found in Your Apps) as the value. The Open API v3 supports authentication via OAuth 2.0 ONLY.
+## Gumroad routes
 
-## Pushing to docker hub
-
-1. Create username developer specific tag
-
-```bash
-docker tag bun-etsy aadilmallick/etsyautomate
-```
-
-2. Push to docker hub
-
-```bash
-docker push aadilmallick/etsyautomate
-```
+- `POST https://app.gumroad.com/links/ekulr` : for saving a product
+- `POST https://app.gumroad.com/links/ekulr/publish` : for publishing a product
+- `GET https://app.gumroad.com/checkout/upsells/products` : for getting a list of products
+- `POST https://app.gumroad.com/links` : for creating a product
+- `POST https://app.gumroad.com/rails/active_storage/direct_uploads` : for uploading a file
+- `POST https://app.gumroad.com/links/mdezde/thumbnails` : for uploading a thumbnail

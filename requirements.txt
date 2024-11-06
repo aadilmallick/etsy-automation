@@ -9,3 +9,7 @@ PyPDF2
 google-generativeai
 ipykernel
 PyMuPDF
+curl_cffi
+pyperclip
+selenium-stealth
+webdriver_manager
