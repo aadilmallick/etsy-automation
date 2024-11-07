@@ -1,31 +1,32 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 import time
 from pathlib import Path
-from selenium_stealth import stealth
-from selenium.webdriver.chrome.options import Options
 import random
-from dotenv import load_dotenv 
 import os
-from typing import List, Union
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.chrome import ChromeDriver
-import shutil
 from logger import Logger
 from selenium.webdriver.remote.webelement import WebElement
 import logging
-from automation_helpers import AutomationHelpers as Ah
+from ai import AI
+from thumbnail_helpers import create_thumbnail_and_cover
+import uuid
+from typing import Literal
 
-applog = Logger(level=logging.ERROR)
 
 class SeleniumScraper:
 
     @staticmethod
-    def setup_driver(headless = False, detached = False, driverPath = None) -> webdriver.Chrome:
+    def setup_driver(
+        headless = False, 
+        detached = False, 
+        driverPath = None, 
+        profile_dir : Literal["Profile 1"] | Literal["Profile 2"] | None = None
+    ) -> webdriver.Chrome:
         """
         Sets up the ChromeDriver which can be ran either headless or using your default chrome account
 
@@ -48,9 +49,13 @@ class SeleniumScraper:
         if headless:
             options.add_argument('--headless=new')
 
+        """ 
+        Open selenium already logged in to google account.
+        If profile_dir is not specified, it will use your default google profile
+        """
         user_data_dir = str(Path.home()) + r'\AppData\Local\Google\Chrome\User Data' 
         options.add_argument('--user-data-dir=' + user_data_dir)
-        options.add_argument('--profile-directory=Profile 2')
+        profile_dir and options.add_argument(f'--profile-directory={profile_dir}')
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
 
@@ -63,13 +68,19 @@ class SeleniumScraper:
             driver = webdriver.Chrome(options=options, service=service)
             return driver
 
-    def __init__(self, headless = False, detached = False, driverPath = None, raise_if_elements_missing = False):
+    def __init__(self, 
+                 headless = False, 
+                 detached = False, 
+                 driverPath = None, 
+                 raise_if_elements_missing = False, 
+                 profile_dir : Literal["Profile 1"] | Literal["Profile 2"] | None = None
+                ):
         self.raise_if_elements_missing = raise_if_elements_missing
         try:
             self.driver = SeleniumScraper.setup_driver(headless=headless, detached=detached, driverPath=driverPath)
         except Exception as e:
             print(e)
-            applog.error("Failed to setup driver with account: Make sure all chrome windows are closed")
+            print("Failed to setup driver with account: Make sure all chrome windows are closed")
             self.driver = webdriver.Chrome()
     
     def wait_until_elem_present(self, selection : str, mode: str = By.CSS_SELECTOR) -> WebElement | None:
@@ -129,35 +140,29 @@ class SeleniumScraper:
     def upload_file(filepath: str, fileInput: WebElement):
         fileInput.send_keys(filepath)
     
+    def execute_javascript(self, script: str):
+        self.driver.execute_script(script)
+    
     @staticmethod
     def random_wait(num_seconds = 1):
         random_seconds = random.uniform(0.5, num_seconds)
         time.sleep(random_seconds)
+    
+    @staticmethod
+    def create_random_uuid():
+        return str(uuid.uuid4())[:10]
 
 
-def upload_cover(filename: str, cover_input: WebElement):
-    cover_path = f"covers/{filename}"
-    full_path = os.path.abspath(cover_path)
-    SeleniumScraper.upload_file(full_path, cover_input)
-
-def upload_thumbnail(filename: str, thumbnail_input: WebElement):
-    thumbnail_path = f"thumbnails/{filename}"
-    full_path = os.path.abspath(thumbnail_path)
-    SeleniumScraper.upload_file(full_path, thumbnail_input)
-
-def upload_sheet_music(filename: str, pdf_input: WebElement):
-    pdf_path = f"sheetmusic/{filename}"
-    full_path = os.path.abspath(pdf_path)
-    SeleniumScraper.upload_file(full_path, pdf_input)
-
-def main_loop():
+def main_loop(scraper: SeleniumScraper, ai: AI, filename: str):
     scraper.driver.get("https://app.gumroad.com/products/new")
+    time.sleep(2)
 
     # 2. fill out product name
     # TODO: use AI here to generate a random product name
+    product_name = ai.create_sheet_name(filename)
     product_name_input = scraper.wait_until_elem_present("input[placeholder='Name of product']")
     SeleniumScraper.random_wait()
-    product_name_input.send_keys("Test Product")
+    product_name_input.send_keys(product_name)
 
     # 3. fill out product price
     price_input = scraper.wait_until_elem_present("input[placeholder='Price your product']")
@@ -171,14 +176,16 @@ def main_loop():
 
     # 5. fill out product description
     # TODO:: use AI to generate a random description
+    description = ai.create_description(filename)
     description_area = scraper.wait_until_elem_present(".rich-text").find_element(By.CSS_SELECTOR, "div")
-    description_area.send_keys("This is my description")
+    description_area.send_keys(description)
 
     # 6. fill out product slug
-    # TODO:: use AI to generate a random description
+    # TODO:: use AI to generate a slug
+    product_slug = ai.create_slug(product_name)
     SeleniumScraper.random_wait()
     slug_input = scraper.query_selector("main > form > section:nth-child(1) > fieldset:nth-child(3) > div > input")
-    slug_input.send_keys(f"test-product-{Ah.create_random_uuid()}")
+    slug_input.send_keys(product_slug)
     SeleniumScraper.random_wait()
 
 
@@ -190,9 +197,10 @@ def main_loop():
     cover_file_input = scraper.query_selector("main > form > section:nth-child(2) > div > div > div > label > input[type=file]")
     thumbnail_file_input = scraper.query_selector("main > form > section:nth-child(3) > div.image-uploader > div.placeholder > label > input[type=file]")
 
-    upload_cover("Avengers_Theme_-_Infinity_War_Arrangement__Piano_Tutorial.jpg", cover_file_input)
+    thumbnail_path, cover_path = create_thumbnail_and_cover(filename)
+    SeleniumScraper.upload_file(cover_path, cover_file_input)
     time.sleep(2)
-    upload_thumbnail("Avengers_Theme_-_Infinity_War_Arrangement__Piano_Tutorial.jpg", thumbnail_file_input)
+    SeleniumScraper.upload_file(thumbnail_path, thumbnail_file_input)
     time.sleep(2)
 
     # 8. go to next section
@@ -201,7 +209,7 @@ def main_loop():
     time.sleep(2)
 
     # 9. add some words of encouragement
-    sell_textarea = scraper.query_selector("div.has-sidebar > div.rich-text > div[contenteditable='true']")
+    sell_textarea = scraper.wait_until_elem_present("div.has-sidebar > div.rich-text > div[contenteditable='true']")
     sell_textarea.send_keys("""
         Thanks for buying this sheet music! I hope you enjoy playing it.
         If you have any questions or concerns, feel free to reach out to me.
@@ -211,24 +219,26 @@ def main_loop():
 
     # 10. add pdf file of sheet music
     pdf_input = scraper.query_selector("div.rich-text-editor-toolbar > details:nth-child(10) > div > div > label > input[type=file]")
-    upload_sheet_music("Avengers_Theme_-_Infinity_War_Arrangement__Piano_Tutorial.pdf", pdf_input)
+    pdf_path = os.path.abspath(f"sheetmusic/{filename}")
+    SeleniumScraper.upload_file(pdf_path, pdf_input)
     time.sleep(2)
 
     # 11. save changes
     save_button = scraper.find_element_by_text_content("Save changes")
     save_button.click()
-    time.sleep(1)
+    time.sleep(3)
 
     publish_button = scraper.find_element_by_text_content("Publish and continue")
     publish_button.click()
-    time.sleep(1)
-
-    # 12. put only in sheet music section
-    switch = scraper.wait_until_elem_present("main > form > section:nth-child(2) > fieldset > label:nth-child(1) > input[type=checkbox]")
-    switch.click()
     time.sleep(3)
 
+    # 12. put only in sheet music section
+    # switch = scraper.wait_until_elem_present("main > form > section:nth-child(2) > fieldset > label:nth-child(1) > input[type=checkbox]")
+    # switch.click()
+    # time.sleep(3)
+
     # 13. add tags
+    scraper.wait_until_elem_present("input[role='combobox']")
     tags = ["sheet music", "piano sheet music", "piano solo", "piano sheet", "piano tutorial"]
     [category_input, tags_input] = scraper.query_selector_all("input[role='combobox']")
     # tags_input = scraper.find_element_by_text_content("Begin typing to add a tag...") \

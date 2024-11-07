@@ -2,17 +2,19 @@ from dotenv import load_dotenv
 import os
 import google.generativeai as genai
 import json
+import math
+import random
 
 class AI:
     title_generation_config = {
-        "temperature": 0.1,
-        "max_output_tokens": 20,
+        "temperature": 0,
+        "max_output_tokens": 50,
         "top_k": 1,
         "response_mime_type": "text/plain",
     }
 
     slug_generation_config = {
-        "temperature": 0.1,
+        "temperature": 0,
         "max_output_tokens": 50,
         "top_k": 1,
         "response_mime_type": "text/plain",
@@ -20,7 +22,8 @@ class AI:
 
     description_generation_config = genai.types.GenerationConfig(
             max_output_tokens=500,
-            stop_sequences=["Keywords:"]
+            stop_sequences=["Keywords:"],
+            temperature=0.2
     )
     def __init__(self):
         GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -33,15 +36,19 @@ class AI:
         
     def create_description(self, filename: str):
         text_prompt = """I will give you a filename representing a piano sheet music pdf, 
-        and your task is to create an etsy listing description that adequately talks about the pdf. 
+        and your task is to create a gumroad product description that adequately talks about the sheet music. Take 
+        extra care to make sure the markdown output is correct. Do not make any assumptions
+        about the difficulty level of the sheet music.
         Subtly disperse keywords for SEO throughout the description text, 
         writing them with natural language."""
-
-        response = self.model.generate_content(contents=[text_prompt, filename], 
-                                        generation_config=self.description_generation_config)
-        return response.text
+        try:
+            response = self.model.generate_content(contents=[text_prompt, filename], 
+                                            generation_config=self.description_generation_config)
+            return response.text
+        except Exception as e:
+            return "Some description"
     
-    def create_sheet_name(self, filename: str):
+    def create_sheet_name(self, filename: str) -> str:
         text_prompt = """I will give you a filename representing a sheet music pdf, 
         and your task is to extract the readable name formatted with spaces. 
         Do not output anything else except JSON in the form like so: {"name": "name here"}
@@ -55,8 +62,13 @@ class AI:
 
         response = self.model.generate_content(contents=[text_prompt, filename], 
                                                generation_config=self.title_generation_config)
-        data = json.loads(response.text)
-        return data["name"]
+        try:
+            data = json.loads(response.text)
+            return data["name"]
+        except json.decoder.JSONDecodeError:
+            return response.text
+        except Exception as e:
+            return "Some name"
     
     def create_slug(self, name: str) -> str:
         text_prompt = """I will give you a name representing a sheet music title, 
@@ -75,5 +87,10 @@ class AI:
                                                contents=[text_prompt, name], 
                                                generation_config=self.slug_generation_config
                                             )
-        data = json.loads(response.text)
-        return data["slug"]
+        try:
+            data = json.loads(response.text)
+            return data["slug"]
+        except json.decoder.JSONDecodeError:
+            return response.text
+        except Exception as e:
+            return f"some-slug-{random.randint(0, 1000)}"
