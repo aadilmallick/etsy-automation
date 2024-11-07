@@ -8,3 +8,7 @@
 - `POST https://app.gumroad.com/links` : for creating a product
 - `POST https://app.gumroad.com/rails/active_storage/direct_uploads` : for uploading a file
 - `POST https://app.gumroad.com/links/mdezde/thumbnails` : for uploading a thumbnail
+
+## HUGE DISCOVERY
+
+Chrome with user data directory doesn't work unless all chrome windows are closed first.

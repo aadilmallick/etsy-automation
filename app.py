@@ -9,6 +9,8 @@ from PIL import Image
 import base64
 import fitz
 import re
+from automation import SeleniumScraper
+import time
 import pyperclip
 
 load_dotenv()
@@ -98,13 +100,5 @@ def create_thumbnail_and_cover(filename: str):
 
 if __name__ == "__main__":
     filename = "_Black_Panther_-_Killmonger_Piano_Tutorial.pdf"
-    gumroad_cookies = {
-        "__stripe_mid": "7979a22d-55bb-4eae-bf5f-e7f43aea52d65497b5",
-        "_ga_DHK93FVQ49": "GS1.1.1705869330.1.1.1705869442.0.0.0",
-        "_ga_963RN367C3": "GS1.1.1705879650.2.1.1705880540.0.0.0",
-        "_ga": "GA1.1.911613289.1705849677",
-        "_ga_BGED9FQ4TE": "GS1.1.1717077010.9.1.1717078546.0.0.0",
-        "_ga_R6H0DREX1G": "GS1.1.1717077011.9.1.1717078546.0.0.0",
-        "last_viewed_dashboard": "sales",
-        "_ga_6LJN6D94N6": "GS1.1.1730918710.32.1.1730918710.0.0.0"
-   }
+    scraper = SeleniumScraper(detached=True, raise_if_elements_missing=True)
+    
